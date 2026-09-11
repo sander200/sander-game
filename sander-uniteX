@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SANDER UNITE: Estação Paulista - 16-Bit Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body {
+    background: #0a0712;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #hud {
+    width: 100%;
+    max-width: 520px;
+    background: #111;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 3px solid #ffcc00;
+    font-size: 8px;
+    z-index: 10;
+  }
+  .hud-card {
+    background: #222;
+    padding: 4px 6px;
+    border: 2px solid #555;
+    border-radius: 4px;
+  }
+  #btn-pause {
+    background: #ffaa00;
+    color: black;
+    border: 2px solid #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  #canvas-container {
+    width: 100%;
+    max-width: 520px;
+    position: relative;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #1c3619;
+    image-rendering: pixelated;
+  }
+  #touch-zone {
+    width: 100%;
+    max-width: 520px;
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 24px;
+    background: #0a0e0c;
+    border-top: 3px solid #1a2920;
+  }
+  .dpad-disk {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 204, 0, 0.3);
+    display: grid;
+    grid-template-columns: 36px 36px 36px;
+    grid-template-rows: 36px 36px 36px;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-dpad {
+    background: #1b261f;
+    border: 2px solid #ffcc00;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  #d-up    { grid-column: 2; grid-row: 1; }
+  #d-left  { grid-column: 1; grid-row: 2; }
+  #d-right { grid-column: 3; grid-row: 2; }
+  #d-down  { grid-column: 2; grid-row: 3; }
+
+  .btn-action {
+    width: 86px;
+    height: 86px;
+    border-radius: 50%;
+    background: #4a0082;
+    border: 4px solid #ff0077;
+    box-shadow: 0 0 15px #ff0077;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  #overlay-screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(5, 5, 8, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+    text-align: center;
+  }
+  .intro-logo-box {
+    border: 3px solid #ffcc00;
+    padding: 10px 14px;
+    box-shadow: 0 0 16px #ffcc00;
+    background: #110d1f;
+    margin-bottom: 12px;
+  }
+  .game-title { font-size: 13px; color: #ffcc00; margin-bottom: 4px; }
+  .sub-title { font-size: 6px; color: #00ffff; }
+  .btn-start {
+    background: #e6005c;
+    border: 3px solid #fff;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    padding: 10px 20px;
+    margin-top: 14px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div class="hud-card" id="h-round">FASE: 1/3</div>
+  <div class="hud-card" id="h-lives" style="color:#ff4444;">VIDAS: ❤️x3</div>
+  <button id="btn-pause" onclick="togglePause()">PAUSE</button>
+  <div class="hud-card" id="h-time" style="color:#ffcc00;">02:00</div>
+  <div class="hud-card" id="h-energy" style="color:#00ffff;">0/1000</div>
+</div>
+
+<div id="canvas-container">
+  <div id="overlay-screen">
+    <div class="intro-logo-box">
+      <div class="game-title">SANDER UNITE</div>
+      <div class="sub-title">ESTAÇÃO PAULISTA: 16-BIT RETRO</div>
+    </div>
+    <div style="font-size: 7px; color: #bbb; line-height: 1.6; max-width: 380px;" id="welcome-text">
+      Guie Sander pelo circuito do parque, absorva os pedestres para somar 1000 de energia e use a Poção de Gelo para congelar a Bruxa Alada Mecânica!
+    </div>
+    <button class="btn-start" id="start-btn" onclick="startGame()">INICIAR</button>
+  </div>
+
+  <canvas id="gameCanvas" width="480" height="300"></canvas>
+</div>
+
+<div id="touch-zone">
+  <div class="dpad-disk">
+    <div class="btn-dpad" id="d-up">▲</div>
+    <div class="btn-dpad" id="d-left">◀</div>
+    <div class="btn-dpad" id="d-right">▶</div>
+    <div class="btn-dpad" id="d-down">▼</div>
+  </div>
+  <div class="btn-action" id="b-absorb">
+    <span>CONGELAR</span>
+    <span style="font-size:5px; color:#00ffff; margin-top:4px;">PODER</span>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameState = 'intro';
+let currentStage = 1;
+const totalStages = 3;
+let score = 0;
+const targetScore = 1000;
+let roundTime = 120;
+let lives = 3;
+let timerInterval = null;
+let animFrame = 0;
+
+let sander = { x: 50, y: 70, speed: 2.2, hasPotion: true, dir: 'down', anim: 0 };
+let boss = { x: 240, y: 150, speed: 1.1, freezeTimer: 0 };
+let potion = { x: 240, y: 200, active: false };
+let walkers = [];
+
+// Gerador das rotas da Estação Paulista
+function initWalkers() {
+  walkers = [];
+  const palette = [
+    { head: '#e69966', shirt: '#e74c3c', pants: '#2c3e50' },
+    { head: '#8d5524', shirt: '#f39c12', pants: '#16a085' },
+    { head: '#ffd1a4', shirt: '#27ae60', pants: '#8e44ad' },
+    { head: '#c68642', shirt: '#9b59b6', pants: '#34495e' },
+    { head: '#f1c27d', shirt: '#e67e22', pants: '#2980b9' }
+  ];
+
+  for (let i = 0; i < 14; i++) {
+    walkers.push({
+      x: 80 + Math.random() * 320,
+      y: 60 + Math.random() * 180,
+      vx: (Math.random() - 0.5) * 1.5,
+      vy: (Math.random() - 0.5) * 1.5,
+      skin: palette[i % palette.length],
+      anim: Math.random() * 10
+    });
+  }
+}
+
+// Sistema de áudio 8-Bit / SVE
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'point') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.setValueAtTime(900, now + 0.08);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now); osc.stop(now + 0.15);
+    } else if (type === 'freeze') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1000, now);
+      osc.frequency.setValueAtTime(200, now + 0.15);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      osc.start(now); osc.stop(now + 0.35);
+    } else if (type === 'hit') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.linearRampToValueAtTime(50, now + 0.35);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+      osc.start(now); osc.stop(now + 0.35);
+    } else if (type === 'potion') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(350, now);
+      osc.frequency.exponentialRampToValueAtTime(1400, now + 0.25);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+      osc.start(now); osc.stop(now + 0.25);
+    }
+  } catch(e) {}
+}
+
+const keys = { up: false, down: false, left: false, right: false, absorb: false };
+
+function bindKey(id, keyName) {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); keys[keyName] = true; });
+  el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+  el.addEventListener('mousedown', () => { initAudio(); keys[keyName] = true; });
+  el.addEventListener('mouseup', () => keys[keyName] = false);
+}
+bindKey('d-up', 'up'); bindKey('d-down', 'down'); bindKey('d-left', 'left'); bindKey('d-right', 'right');
+bindKey('b-absorb', 'absorb');
+
+window.addEventListener('keydown', e => {
+  initAudio();
+  if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = true;
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+  if (e.code === 'Space') keys.absorb = true;
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = false;
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+  if (e.code === 'Space') keys.absorb = false;
+});
+
+function startGame() {
+  initAudio();
+  document.getElementById('overlay-screen').style.display = 'none';
+  gameState = 'playing';
+  score = 0;
+  lives = 3;
+  currentStage = 1;
+  roundTime = 120;
+  sander.x = 55;
+  sander.y = 75;
+  sander.hasPotion = true;
+  initWalkers();
+  updateHUD();
+
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (gameState === 'playing') {
+      roundTime--;
+      updateHUD();
+      if (roundTime <= 0) gameOver();
+    }
+  }, 1000);
+}
+
+function togglePause() {
+  if (gameState === 'playing') {
+    gameState = 'paused';
+    document.getElementById('btn-pause').innerText = 'RESUME';
+  } else if (gameState === 'paused') {
+    gameState = 'playing';
+    document.getElementById('btn-pause').innerText = 'PAUSE';
+  }
+}
+
+function updateHUD() {
+  const m = Math.floor(roundTime / 60).toString().padStart(2, '0');
+  const s = (roundTime % 60).toString().padStart(2, '0');
+  document.getElementById('h-time').innerText = `${m}:${s}`;
+  document.getElementById('h-round').innerText = `FASE: ${currentStage}/${totalStages}`;
+  document.getElementById('h-lives').innerText = `VIDAS: ${'❤️'.repeat(Math.max(0, lives))}`;
+  document.getElementById('h-energy').innerText = `${score}/${targetScore}`;
+}
+
+function gameOver() {
+  gameState = 'gameover';
+  const overlay = document.getElementById('overlay-screen');
+  overlay.style.display = 'flex';
+  document.getElementById('welcome-text').innerText = 'FIM DE JOGO! O chefe alcançou Sander ou o tempo expirou.';
+  document.getElementById('start-btn').innerText = 'REPETIR';
+}
+
+function update() {
+  if (gameState !== 'playing') return;
+  animFrame++;
+
+  let moving = false;
+  if (keys.up)    { sander.y -= sander.speed; sander.dir = 'up'; moving = true; }
+  if (keys.down)  { sander.y += sander.speed; sander.dir = 'down'; moving = true; }
+  if (keys.left)  { sander.x -= sander.speed; sander.dir = 'left'; moving = true; }
+  if (keys.right) { sander.x += sander.speed; sander.dir = 'right'; moving = true; }
+
+  if (moving) sander.anim += 0.2;
+
+  sander.x = Math.max(20, Math.min(canvas.width - 20, sander.x));
+  sander.y = Math.max(30, Math.min(canvas.height - 25, sander.y));
+
+  // Lógica dos pedestres
+  walkers.forEach(w => {
+    w.x += w.vx;
+    w.y += w.vy;
+    w.anim += 0.15;
+    if (w.x < 30 || w.x > canvas.width - 30) w.vx *= -1;
+    if (w.y < 40 || w.y > canvas.height - 30) w.vy *= -1;
+
+    if (Math.hypot(sander.x - w.x, sander.y - w.y) < 16) {
+      score += 35;
+      playSound('point');
+      w.x = 40 + Math.random() * (canvas.width - 80);
+      w.y = 40 + Math.random() * (canvas.height - 80);
+      if (score >= targetScore) {
+        if (currentStage < totalStages) {
+          currentStage++;
+          score = 0;
+          boss.speed += 0.25;
+          roundTime = 120;
+        } else {
+          gameState = 'win';
+          document.getElementById('overlay-screen').style.display = 'flex';
+          document.getElementById('welcome-text').innerText = 'PARABÉNS! Sander completou toda a rota da Estação Paulista!';
+          document.getElementById('start-btn').innerText = 'JOGAR DE NOVO';
+        }
+      }
+      updateHUD();
+    }
+  });
+
+  // Habilidade Congelar (Poção Mágica)
+  if (keys.absorb && sander.hasPotion) {
+    sander.hasPotion = false;
+    boss.freezeTimer = 220;
+    playSound('freeze');
+    setTimeout(() => {
+      potion.x = 60 + Math.random() * (canvas.width - 120);
+      potion.y = 60 + Math.random() * (canvas.height - 120);
+      potion.active = true;
+    }, 7000);
+  }
+
+  if (potion.active && Math.hypot(sander.x - potion.x, sander.y - potion.y) < 18) {
+    potion.active = false;
+    sander.hasPotion = true;
+    playSound('potion');
+  }
+
+  // Comportamento do Boss Alado
+  if (boss.freezeTimer > 0) {
+    boss.freezeTimer--;
+  } else {
+    const angle = Math.atan2(sander.y - boss.y, sander.x - boss.x);
+    boss.x += Math.cos(angle) * boss.speed;
+    boss.y += Math.sin(angle) * boss.speed;
+
+    if (Math.hypot(sander.x - boss.x, sander.y - boss.y) < 18) {
+      lives--;
+      playSound('hit');
+      boss.x = 240;
+      boss.y = 150;
+      updateHUD();
+      if (lives <= 0) gameOver();
+    }
+  }
+}
+
+// --- RENDERIZADORES GRÁFICOS 16-BIT ---
+
+function drawMap() {
+  // Gramado base
+  ctx.fillStyle = '#2d5a27';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Caminhos de areia/terra (Traçado RPG)
+  ctx.fillStyle = '#dfb15b';
+  ctx.fillRect(30, 45, 80, 26);
+  ctx.fillRect(80, 45, 26, 180);
+  ctx.fillRect(80, 195, 340, 26);
+  ctx.fillRect(380, 70, 26, 150);
+  ctx.fillRect(200, 70, 200, 26);
+  ctx.fillRect(200, 70, 26, 130);
+
+  // Lago decorativo
+  ctx.fillStyle = '#1c6ca1';
+  ctx.fillRect(280, 120, 55, 35);
+  ctx.strokeStyle = '#4da6ff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(280, 120, 55, 35);
+
+  // Prédio Central da Estação
+  ctx.fillStyle = '#34495e';
+  ctx.fillRect(170, 6, 140, 36);
+  ctx.fillStyle = '#1a252f';
+  ctx.fillRect(175, 10, 130, 28);
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = '6px "Press Start 2P"';
+  ctx.textAlign = 'center';
+  ctx.fillText('ESTAÇÃO PAULISTA', 240, 26);
+
+  // Bandeiras INÍCIO e FIM
+  ctx.fillStyle = '#e74c3c';
+  ctx.fillRect(35, 35, 14, 10);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(33, 35, 2, 20);
+
+  ctx.fillStyle = '#3498db';
+  ctx.fillRect(390, 195, 14, 10);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(388, 195, 2, 20);
+}
+
+// Sprite procedural de Sander (16-bit)
+function drawSander(x, y, anim) {
+  const legOffset = Math.sin(anim) * 2;
+
+  // Sombra
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(x, y + 12, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Fones de ouvido azuis
+  ctx.fillStyle = '#00aaff';
+  ctx.fillRect(x - 8, y - 14, 16, 4);
+  ctx.fillRect(x - 9, y - 12, 3, 6);
+  ctx.fillRect(x + 6, y - 12, 3, 6);
+
+  // Cabelo preto crespo
+  ctx.fillStyle = '#111';
+  ctx.fillRect(x - 6, y - 13, 12, 4);
+
+  // Cabeça e rosto
+  ctx.fillStyle = '#c68642';
+  ctx.fillRect(x - 5, y - 9, 10, 7);
+
+  // Barba
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(x - 4, y - 3, 8, 2);
+
+  // Jaqueta Azul com patch frontal
+  ctx.fillStyle = '#1a53ff';
+  ctx.fillRect(x - 7, y - 2, 14, 8);
+  ctx.fillStyle = '#00ffff';
+  ctx.fillRect(x - 2, y, 4, 4); // Logo arcano central
+
+  // Bermudas pretas cargo
+  ctx.fillStyle = '#1c1c1c';
+  ctx.fillRect(x - 6, y + 6, 12, 5);
+
+  // Pernas e tênis coloridos
+  ctx.fillStyle = '#c68642';
+  ctx.fillRect(x - 5, y + 11, 3, 3);
+  ctx.fillRect(x + 2, y + 11, 3, 3);
+
+  // Tênis estilizados (azul e vermelho)
+  ctx.fillStyle = '#ff0055';
+  ctx.fillRect(x - 6, y + 13 + legOffset, 4, 3);
+  ctx.fillRect(x + 2, y + 13 - legOffset, 4, 3);
+
+  if (sander.hasPotion) {
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y + 2, 16, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+// Sprite procedural do Chefe: Bruxa Alada Mecânica (16-bit)
+function drawBoss(x, y, freezeTimer) {
+  const crystalColor = freezeTimer > 0 ? '#00ffff' : '#ff00aa';
+  const armorColor = '#2b2b2e';
+
+  // Sombra
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.ellipse(x, y + 14, 10, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Asas mecânicas de cristal rosa/ciano
+  ctx.fillStyle = crystalColor;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 4);
+  ctx.lineTo(x - 20, y - 18);
+  ctx.lineTo(x - 8, y + 2);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(x, y - 4);
+  ctx.lineTo(x + 20, y - 18);
+  ctx.lineTo(x + 8, y + 2);
+  ctx.fill();
+
+  // Armadura Mecha
+  ctx.fillStyle = armorColor;
+  ctx.fillRect(x - 7, y - 6, 14, 14);
+
+  // Núcleo do peito (Coração de cristal)
+  ctx.fillStyle = crystalColor;
+  ctx.fillRect(x - 3, y - 2, 6, 6);
+
+  // Elmo e crista com bico
+  ctx.fillStyle = '#d4af37'; // Dourado
+  ctx.fillRect(x - 6, y - 14, 12, 8);
+  ctx.fillStyle = '#ff8800';
+  ctx.fillRect(x - 2, y - 8, 4, 4); // Bico mecânico
+
+  // Lança de combate
+  ctx.fillStyle = '#bbb';
+  ctx.fillRect(x - 13, y - 16, 2, 30);
+  ctx.fillStyle = crystalColor;
+  ctx.fillRect(x - 15, y - 20, 6, 6);
+}
+
+// Sprite dos Pedestres
+function drawWalker(w) {
+  const step = Math.sin(w.anim) * 2;
+  ctx.fillStyle = w.skin.head;
+  ctx.fillRect(w.x - 3, w.y - 7, 6, 5);
+  ctx.fillStyle = w.skin.shirt;
+  ctx.fillRect(w.x - 4, w.y - 2, 8, 6);
+  ctx.fillStyle = w.skin.pants;
+  ctx.fillRect(w.x - 3, w.y + 4 + step, 3, 4);
+  ctx.fillRect(w.x + 1, w.y + 4 - step, 3, 4);
+}
+
+function draw() {
+  drawMap();
+
+  // Desenhar pedestres
+  walkers.forEach(w => drawWalker(w));
+
+  // Poção de Gelo no mapa
+  if (potion.active) {
+    ctx.fillStyle = '#ff00aa';
+    ctx.beginPath(); ctx.arc(potion.x, potion.y, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(potion.x - 1, potion.y - 7, 2, 3);
+  }
+
+  drawBoss(boss.x, boss.y, boss.freezeTimer);
+  drawSander(sander.x, sander.y, sander.anim);
+
+  if (gameState === 'paused') {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = '12px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.fillText('PAUSADO', canvas.width / 2, canvas.height / 2);
+  }
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
